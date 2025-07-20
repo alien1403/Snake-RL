@@ -34,13 +34,25 @@ SPEED = 20
 
 class SnakeGameAI:
     def __init__(self, w: int = 640, h: int = 480):
+        self.high_score = self._load_high_score()
+    
         self.w = w
         self.h = h
         self.display = pygame.display.set_mode((self.w, self.h))
         pygame.display.set_caption('Snake')
         self.clock = pygame.time.Clock()
         self.reset()
-        
+    
+    def _load_high_score(self):
+        try:
+            with open('snake_high_score.txt', 'r') as f:
+                return int(f.read())
+        except Exception:
+            return 0
+
+    def _save_high_score(self):
+        with open('snake_high_score.txt', 'w') as f:
+            f.write(str(self.high_score))
         
     def reset(self):
         self.direction = Directions.RIGHT
@@ -87,6 +99,9 @@ class SnakeGameAI:
             self.score += 1
             reward = 10
             self._place_food()
+            if self.score > self.high_score:
+                self.high_score = self.score
+                self._save_high_score()
         else:
             self.snake.pop()
         
@@ -109,15 +124,23 @@ class SnakeGameAI:
     
     def _update_ui(self):
         self.display.fill(BLACK)
-        
-        for pt in self.snake:
-            pygame.draw.rect(self.display, BLUE1, pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
-            pygame.draw.rect(self.display, BLUE2, pygame.Rect(pt.x + 4, pt.y + 4, 12, 12))
-            
+        for i, pt in enumerate(self.snake):
+            color = (0, 50 + min(205, i*10), 255 - min(205, i*10))
+            pygame.draw.rect(self.display, color, pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE), border_radius=8)
+            # Add eyes to the head
+            if i == 0:
+                eye_radius = 3
+                eye_offset_x = BLOCK_SIZE // 4
+                eye_offset_y = BLOCK_SIZE // 4
+                pygame.draw.circle(self.display, WHITE, (pt.x + eye_offset_x, pt.y + eye_offset_y), eye_radius)
+                pygame.draw.circle(self.display, WHITE, (pt.x + BLOCK_SIZE - eye_offset_x, pt.y + eye_offset_y), eye_radius)
+        # glowing effect
         if self.food is not None:
-            pygame.draw.rect(self.display, RED, pygame.Rect(self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))
-        
-        text = font.render("Score: " + str(self.score), True, WHITE)
+            for glow in range(6, 0, -2):
+                pygame.draw.circle(self.display, (255, 50, 50, 100), (self.food.x + BLOCK_SIZE//2, self.food.y + BLOCK_SIZE//2), BLOCK_SIZE//2 + glow)
+            pygame.draw.circle(self.display, RED, (self.food.x + BLOCK_SIZE//2, self.food.y + BLOCK_SIZE//2), BLOCK_SIZE//2)
+        # Score and high score
+        text = font.render(f"Score: {self.score}  High Score: {self.high_score}", True, WHITE)
         self.display.blit(text, [0,0])
         pygame.display.flip()
             

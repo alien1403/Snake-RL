@@ -9,6 +9,6 @@ def plot(scores, mean_scores):
     plt.plot(mean_scores, label='Mean Score')
     plt.ylim(ymin=0)
     plt.legend()
-    plt.pause(0.001)  # Forces update
+    plt.pause(0.001)
     plt.draw()
     
